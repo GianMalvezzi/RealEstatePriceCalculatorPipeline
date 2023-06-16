@@ -1,0 +1,84 @@
+train_test_split:
+  test_size: 0.2
+  random_state: 8
+
+target: Preco
+
+model:
+  gradient_boosting:
+    n_estimators:
+      - 100
+      - 200
+      - 300
+      - 400
+    learning_rate:
+      - 0.1
+      - 0.01
+      - 0.001
+    max_depth:
+      - 3
+      - 4
+      - 5
+      - 6
+    min_samples_split:
+      - 2
+      - 4
+      - 8
+    subsample:
+      - 0.6
+      - 0.8
+      - 1.0
+    max_features:
+      - sqrt
+      - log2
+  random_forest:
+    n_estimators:
+      - 100
+      - 200
+      - 400
+    max_depth:
+      - 5
+      - 10
+      - 25
+    min_samples_split:
+      - 2
+      - 5
+      - 10
+    min_samples_leaf:
+      - 1
+      - 2
+      - 4
+    bootstrap:
+      - true
+      - false
+
+df_query: SELECT * FROM ...
+
+features_amenities:
+
+features:
+  - Vagas_carro
+  - Categoria
+  - Tipo
+  - Banheiros
+  - Bairro
+  - Tamanho
+  - Quartos
+  - IPTU
+  - Condominio
+
+features_list_pipeline:
+  continous:
+    - Condominio
+    - IPTU
+    - Tamanho
+    - Categoria
+  discrete: 
+    - Banheiros
+    - Quartos
+    - Vagas_carro
+    - Categoria
+  categorical:
+    - Categoria
+    - Tipo
+    - Bairro

@@ -41,7 +41,7 @@ To provide clarity on the column names and their corresponding meanings used in 
 | Quartos              | Number of bedrooms    |
 | Banheiros            | Number of bathrooms   |
 | Vagas_carro          | Number of parking spaces |
-| Tamanho              | Property size (in sq. ft.) |
+| Tamanho              | Property size (in sq. m) |
 | Data                 | Date of data collection |
 | json                 | JSON data             |
 | Tempo_Data_Coleta    | Time of data collection |
