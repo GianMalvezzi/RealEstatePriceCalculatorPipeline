@@ -8,20 +8,35 @@ class BaseRegression:
         self.model_name = model_name
         self.model = model
 
-    def get_params(self):
-        self.config = OmegaConf.load(CONFIG_PATH)
-        model_config = getattr(self.config.model, self.model_name)
+    def get_params(self, config):
+        # self.config = OmegaConf.load(CONFIG_PATH)
+        # model_config = getattr(self.config.model, self.model_name)
+        # print(type(model_config))
         params_dict = {}
-        for param_name, param_values in vars(model_config).items():
-            if all(isinstance(item, int) for item in param_values):
-                params_dict[param_name] = hp.quniform(param_name, param_values[0], param_values[1], 1)
+        for param_name, param_values in config.model.items():
+            print(param_values)
 
-            if all(isinstance(item, float) for item in param_values):
-                params_dict[param_name] = hp.quniform(param_name, param_values[0], param_values[1])
+            if type(param_values) == list:
+                if all(type(val) == int for val in sorted(param_values)):
+                    params_dict[param_name] = hp.quniform(param_name, param_values[0], param_values[1], 1)
 
-            if all(isinstance(item, str) or isinstance(item, bool) for item in param_values):
-                params_dict[param_name] = hp.choice(param_name, param_values)
-        return params_dict
+                elif all(type(val) == float for val in sorted(param_values)):
+                    params_dict[param_name] = hp.quniform(param_name, param_values[0], param_values[1])
+
+                elif all(type(val) == str for val in param_values):
+                    params_dict[param_name] = hp.choice(param_name, param_values)
+
+            else:
+                params_dict[param_name] = param_values
+
+            print("---------------")
+            print([params_dict])
+        if isinstance(self.model, GradientBoostingRegressor):
+            self.model = GradientBoostingRegressor(**params_dict["gradient_boosting"])
+        
+        elif isinstance(self.model, RandomForestRegressor):
+            self.model = RandomForestRegressor(**params_dict["random_forest"])
+            
 
 class GradientBoostingRegression(BaseRegression):
     def __init__(self):

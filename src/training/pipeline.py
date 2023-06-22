@@ -9,7 +9,7 @@ from sklearn.pipeline import Pipeline
 from preprocessors.preprocessor_model import RegressorTransformers
 from unidecode import unidecode
 from config import CONFIG_DIR, CONFIG_NAME
-from hydra.experimental import compose, initialize_config_module
+from hydra import compose, initialize_config_module
 from omegaconf import OmegaConf
 
 

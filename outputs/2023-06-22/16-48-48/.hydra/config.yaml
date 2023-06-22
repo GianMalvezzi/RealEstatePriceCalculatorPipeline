@@ -57,8 +57,8 @@ features_list_pipeline:
 model:
   gradient_boosting:
     learning_rate:
-    - 0.001
     - 0.1
+    - 0.001
     max_depth:
     - 3
     - 6
@@ -97,11 +97,9 @@ random_state: 8
 target: Preco
 train_test_split:
   test_size: 0.2
-client_dir: ""
-
+client_dir: ''
 tunning:
-  max_evals: 15
-  used_metric: "MAE"
-
+  max_evals: 100
+  used_metric: MAE
 mlflow:
   tracking_uri: http://localhost:5000
