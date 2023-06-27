@@ -44,7 +44,7 @@ features_list_pipeline:
   - Categoria
   - Tipo
   - Bairro
-  continous:
+  continuous:
   - Condominio
   - IPTU
   - Tamanho
@@ -100,7 +100,7 @@ train_test_split:
 client_dir: ""
 
 tunning:
-  max_evals: 15
+  max_evals: 15 #nao esquecer de mudar isso
   used_metric: "MAE"
 
 mlflow:

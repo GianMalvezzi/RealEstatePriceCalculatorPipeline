@@ -1,15 +1,10 @@
-import re
-import yaml
-import hydra
-import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from preprocessors.preprocessor_model import RegressorTransformers
-from unidecode import unidecode
-from config import CONFIG_DIR, CONFIG_NAME
-from hydra import compose, initialize_config_module
+from config import CONFIG_NAME
+from hydra import compose
 from omegaconf import OmegaConf
 
 
@@ -39,34 +34,34 @@ def create_pipeline(config, model):
                                  remainder='passthrough')
 
     simple_discrete_pipeline = Pipeline([
-    ('imputation with median of each category', regressor_transformers.simple_imputer_discrete),
-    ('robust scaler', regressor_transformers.scaler_robust)
+    ('median-imputation-by-category', regressor_transformers.simple_imputer_discrete),
+    ('robust-scaler', regressor_transformers.scaler_robust)
     ])
 
     categorical_pipeline = Pipeline([
-    ('one-hot encoding', regressor_transformers.one_hot_encoding)])
+    ('one-hot', regressor_transformers.one_hot_encoding)])
 
     target_pipeline_with_boxcox = Pipeline([
-        ('box cox transform', regressor_transformers.boxcox_transform),
-        ('robust scaler', regressor_transformers.scaler_robust)
+        ('box-cox', regressor_transformers.boxcox_transform),
+        ('robust-scaler', regressor_transformers.scaler_robust)
         ])
 
     simple_continuous_pipeline_boxcox = Pipeline([
-    ('imputation with median of each category', regressor_transformers.simple_imputer_continuous),
-    ('box cox transform', regressor_transformers.boxcox_transform),
-    ('robust scaler', regressor_transformers.scaler_robust)
+    ('median-imputation-by-category', regressor_transformers.simple_imputer_continuous),
+    ('box-cox', regressor_transformers.boxcox_transform),
+    ('robust-scaler', regressor_transformers.scaler_robust)
     ])
 
     simple_with_boxcox = ColumnTransformer([
-    ('transforming continuous', simple_continuous_pipeline_boxcox, config.features_list_pipeline.continous),
-    ('transforming discrete', simple_discrete_pipeline, config.features_list_pipeline.discrete),
-    ('transforming categorical columns', categorical_pipeline, config.features_list_pipeline.categorical + config.features_amenities)
+    ('transforming-continuous', simple_continuous_pipeline_boxcox, OmegaConf.to_container(config.features_list_pipeline.continuous)),
+    ('transforming-discrete', simple_discrete_pipeline, OmegaConf.to_container(config.features_list_pipeline.discrete)),
+    ('transforming-categorical', categorical_pipeline, OmegaConf.to_container(config.features_list_pipeline.categorical + config.features_amenities))
     ],verbose_feature_names_out=True)
 
     final_pipeline = Pipeline([
-        ('Feature_transformations', simple_with_boxcox),
-        ('Target_transformation', TransformedTargetRegressor(regressor=model, transformer=target_pipeline_with_boxcox))
-    ], verbose=True)
+        ('feature-transformations', simple_with_boxcox),
+        ('target-transformation', TransformedTargetRegressor(regressor=model, transformer=target_pipeline_with_boxcox))
+    ])
 
     return final_pipeline
 
