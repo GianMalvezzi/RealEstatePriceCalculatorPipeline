@@ -6,6 +6,8 @@ After completing the EDA phase, we trained a machine learning model using the da
 
 In addition to model serving, we integrated MLflow for model tracking and experiment management. MLflow allowed us to log and track model training runs, metrics, and artifacts, providing a comprehensive view of the model development process.
 
+Big thanks to [Gabriel](https://github.com/gabaghul) for the object orientation part and [João](https://github.com/joaoceragioli) for the DevOps infrastucture part.
+
 ## Usage
 
 To use or extend this project, follow these steps:
