@@ -97,7 +97,6 @@ random_state: 8
 target: Preco
 train_test_split:
   test_size: 0.2
-client_dir: ""
 
 tunning:
   max_evals: 15 #nao esquecer de mudar isso
@@ -105,3 +104,9 @@ tunning:
 
 mlflow:
   tracking_uri: http://localhost:5000
+
+best_model: ""
+
+big_query:
+  project_id: ""
+  dataset_id: ""

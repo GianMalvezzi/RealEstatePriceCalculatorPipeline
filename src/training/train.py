@@ -3,9 +3,12 @@ import warnings
 import numpy as np
 import sys
 import os
+import bentoml
+
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import CONFIG_DIR, CONFIG_NAME
+from preprocessors import data_cleaning
+from config import CONFIG_DIR, CONFIG_NAME, CLIENT_PATH
 from sklearn.model_selection import KFold, cross_validate, train_test_split
 from training.pipeline import create_pipeline, filter_top_amenities, get_top_amenities
 from models.models import GradientBoostingRegression, RandomForestRegression
@@ -13,8 +16,8 @@ import mlflow
 import pandas as pd
 from hyperopt import fmin, tpe, STATUS_OK, Trials
 from utils.utils import transform_to_numeric
-from sklearn.metrics import make_scorer, mean_absolute_error, r2_score, median_absolute_error
-from google.cloud import bigquery
+from sklearn.metrics import make_scorer, mean_absolute_error, mean_squared_error, median_absolute_error
+from hydra import compose
 
 class HyperParamTunning:
     def __init__(self, model_name, model):
@@ -55,20 +58,16 @@ class HyperParamTunning:
         return {
         'MAE': make_scorer(mean_absolute_error, greater_is_better=False),
         'MEDAE': make_scorer(median_absolute_error, greater_is_better=False),
-        'R2': make_scorer(r2_score)
+        'RMSE': make_scorer(np.sqrt(mean_squared_error))
     }
 
 
-   
+
 def train(config):
-    df = pd.read_csv("/home/gian/Documents/real_state_price_calculator_pipeline/ai_minha_voida.csv")
-    # # Instantiate a BigQuery client
-    # client = bigquery.Client(config.client_dir)
+    df = pd.read_gbq(f"SELECT * FROM {config.big_query.dataset_id}", project_id=config.big_query.project_id)
 
-    # pd.read_gbq(query=config.query)
+    df = data_cleaning(df)
     
-    mlflow.set_tracking_uri("http://localhost:5000")
-
     X_train, X_test, y_train, y_test = train_test_split(df[config.features + config.features_amenities],
                                                 df[config.target],
                                                 test_size=config.train_test_split.test_size,
@@ -80,7 +79,9 @@ def train(config):
     
     current_date = datetime.datetime.now().strftime("%Y%m%d")
 
-    for models in [GradientBoostingRegression(), RandomForestRegression()]:
+    model_gb = GradientBoostingRegression()
+    model_rf = RandomForestRegression()
+    for models in [model_gb, model_rf]:
         # model tunning
         param = models.get_params(config)
         tunning = HyperParamTunning(models.model_name, models.model)
@@ -126,13 +127,41 @@ def train(config):
             final_pipeline = create_pipeline(config, models.model)
             final_pipeline.fit(X_train,y_train)
             mlflow.sklearn.log_model(final_pipeline, f"{models.model_name}")
+            print("Model saved in run %s" % mlflow.active_run().info.run_uuid)
             mlflow.log_params({"feature_importance": final_pipeline.named_steps['Target_transformation'].regressor_.feature_importances_})
 
-            final_pipeline.named_steps
             y_pred = final_pipeline.predict(X_test)
             mae = mean_absolute_error(y_test, y_pred)
             medae = median_absolute_error(y_test, y_pred)
-            r2 = r2_score(y_test, y_pred)
+            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
             mlflow.log_metric("MAE", mae)
             mlflow.log_metric("MEDAE", medae)
-            mlflow.log_metric("R2", r2)
+            mlflow.log_metric("RMSE", rmse)
+
+    # Search runs with the specified tag
+    filter_tags = {
+        "run_name": "training",
+        "date": current_date
+    }
+
+
+    # Create the filter string by concatenating the tag filters with the logical AND operator
+    filter_string = " and ".join([f"tags.{tag}='{value}'" for tag, value in filter_tags.items()])
+
+    # Specify the metric and sorting order
+    order_by = f"metrics.{config.tunning.used_metric} ASC" 
+    
+    # Search runs with the specified tag filters
+    best_run_id = mlflow.search_runs(filter_string=filter_string, order_by=[order_by]).loc[0,'run_id']
+    
+    best_model_name = mlflow.search_runs(filter_string=filter_string, order_by=[order_by]).loc[0,'model']
+
+    loaded_model = mlflow.sklearn.load_model("runs:/" + best_run_id + "/model")
+
+    saved_model = bentoml.sklearn.save_model(best_model_name, loaded_model)
+
+    print(f"Final model saved: {saved_model}")
+    #update the config value
+    config = compose(config_name=CONFIG_NAME)
+    config.best_model = best_model_name
+    
